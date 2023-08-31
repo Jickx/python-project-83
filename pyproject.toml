@@ -9,6 +9,10 @@ readme = "README.md"
 python = "^3.11"
 flask = "^2.3.3"
 gunicorn = "^21.2.0"
+psycopg2-binary = "^2.9.7"
+python-dotenv = "^1.0.0"
+validators = "^0.21.2"
+url-normalize = "^1.4.3"
 
 
 [tool.poetry.group.dev.dependencies]
