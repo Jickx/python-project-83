@@ -1,8 +1,11 @@
 install:
 	poetry install
 
+build:
+	./build.sh
+
 dev:
-	poetry run flask --app page_analyzer:app run
+	poetry run flask --app page_analyzer:app run --debug
 
 PORT ?= 8000
 start:
