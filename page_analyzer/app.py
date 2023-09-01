@@ -63,7 +63,6 @@ def get_url_by_id(id):
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
             column_names = [desc[0] for desc in cur.description]
-            logging.critical(column_names)
             result = cur.fetchone()
     conn.close()
     return dict(zip(column_names, result))
@@ -96,23 +95,6 @@ def get_all_url_details(id):
             result = cur.fetchall()
     conn.close()
     return map(lambda x: dict(zip(column_names, x)), result)
-
-
-def make_check(id):
-    url = get_url_by_id(id)
-    data = scrape(url['name'])
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            sql = 'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s);'
-            cur.execute(sql, (id, data,))
-    conn.commit()
-    conn.close()
-
-
-def scrape(name):
-    r = requests.get(name)
-    return r.status_code
 
 
 @app.route('/')
@@ -161,6 +143,21 @@ def get_url_details(id):
 
 @app.post('/urls/<id>/checks')
 def get_checks(id):
-    make_check(id)
+    url = get_url_by_id(id)
+    try:
+        r = requests.get(url['name'])
+        data = r.status_code
+    except requests.exceptions.RequestException:
+        flash('Произошла ошибка при проверке', 'danger')
+        return redirect(url_for('get_url_details', id=id), 302)
+    logging.critical('data is ', data)
+
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            sql = 'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s);'
+            cur.execute(sql, (id, data,))
+    conn.commit()
+    conn.close()
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
