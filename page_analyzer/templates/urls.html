@@ -18,10 +18,10 @@
                 <tbody>
                 {% for url in urls %}
                 <tr>
-                    <th>{{ url.id }}</th>
-                    <th>{{ url.name }}</th>
-                    <th></th>
-                    <th></th>
+                    <td>{{ url.id if url.id }}</td>
+                    <td><a href="{{ url_for('get_url_details', id=url.id) }}">{{ url.name if url.name }}</a></td>
+                    <td>{{ url.created_at if url.created_at }}</td>
+                    <td>{{ url.status_code if url.status_code }}</td>
                 </tr>
                 {% endfor %}
                 </tbody>

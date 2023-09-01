@@ -13,6 +13,7 @@ psycopg2-binary = "^2.9.7"
 python-dotenv = "^1.0.0"
 validators = "^0.21.2"
 url-normalize = "^1.4.3"
+requests = "^2.31.0"
 
 
 [tool.poetry.group.dev.dependencies]

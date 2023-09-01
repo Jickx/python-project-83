@@ -13,20 +13,20 @@ import os
 import validators
 from url_normalize import url_normalize
 import secrets
+import requests
 
 import logging
 
 app = Flask(__name__)
+load_dotenv()
 
 secret_key = secrets.token_hex(16)
 app.config['SECRET_KEY'] = secret_key
-
-load_dotenv()
-DATABASE_URL = os.getenv('DATABASE_URL')
+app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
 
 def connect_to_db():
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(app.config['DATABASE_URL'])
     return conn
 
 
@@ -34,7 +34,13 @@ def get_all_urls():
     conn = connect_to_db()
     with conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls ORDER BY id ASC")
+            cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
+                        "urls.name, "
+                        "url_checks.status_code, "
+                        "url_checks.created_at "
+                        "FROM urls "
+                        "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
+                        "ORDER BY urls.id ASC")
             column_names = [desc[0] for desc in cur.description]
             result = cur.fetchall()
     conn.close()
@@ -71,7 +77,9 @@ def insert_data(name):
             cur.execute(sql, (name,))
         conn.commit()
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM urls WHERE name LIKE %s", (name,))
+            cur.execute("SELECT id FROM urls "
+                        "WHERE name LIKE %s",
+                        (name,))
             id = cur.fetchone()[0]
     conn.close()
     return id
@@ -81,7 +89,9 @@ def get_all_url_details(id):
     conn = connect_to_db()
     with conn:
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM url_checks WHERE url_id = %s ORDER BY id DESC', (id,))
+            cur.execute('SELECT * FROM url_checks WHERE url_id = %s ORDER BY id DESC',
+                        (id,)
+                        )
             column_names = [desc[0] for desc in cur.description]
             result = cur.fetchall()
     conn.close()
@@ -89,18 +99,20 @@ def get_all_url_details(id):
 
 
 def make_check(id):
+    url = get_url_by_id(id)
+    data = scrape(url['name'])
     conn = connect_to_db()
-    # data = scrape()
     with conn:
         with conn.cursor() as cur:
-            sql = 'INSERT INTO url_checks (url_id) VALUES (%s);'
-            cur.execute(sql, (id,))
+            sql = 'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s);'
+            cur.execute(sql, (id, data,))
     conn.commit()
     conn.close()
 
 
-def scrape(name):  # TODO
-    pass
+def scrape(name):
+    r = requests.get(name)
+    return r.status_code
 
 
 @app.route('/')
@@ -131,7 +143,7 @@ def post_url():
 
     flash('Страница успешно добавлена', 'success')
     id = insert_data(url_norm)
-    return redirect(url_for('url_details', id=id), 302)
+    return redirect(url_for('get_url_details', id=id), 302)
 
 
 @app.route('/urls/<int:id>')
