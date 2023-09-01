@@ -113,6 +113,9 @@ def urls_page():
 @app.post('/urls')
 def post_url():
     url = request.form.get('url')
+    if not url:
+        flash('URL обязателен', 'danger')
+        return redirect(url_for('home_page')), 302
     if not validators.url(url):
         flash('Некорректный URL', 'danger')
         return redirect(url_for('home_page')), 302
