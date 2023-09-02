@@ -8,12 +8,14 @@ from flask import (
     get_flashed_messages
 )
 from dotenv import load_dotenv
+from url_normalize import url_normalize
+from bs4 import BeautifulSoup
 import psycopg2
 import os
 import validators
-from url_normalize import url_normalize
 import secrets
 import requests
+
 
 import logging
 
@@ -88,7 +90,9 @@ def get_all_url_details(id):
     conn = connect_to_db()
     with conn:
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM url_checks WHERE url_id = %s ORDER BY id DESC',
+            cur.execute('SELECT * FROM url_checks '
+                        'WHERE url_id = %s '
+                        'ORDER BY id DESC',
                         (id,)
                         )
             column_names = [desc[0] for desc in cur.description]
@@ -149,17 +153,39 @@ def get_checks(id):
     url = get_url_by_id(id)
     try:
         r = requests.get(url['name'])
-        data = r.status_code
+        status_code = r.status_code
+        html_text = r.text
     except requests.exceptions.RequestException:
         flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('get_url_details', id=id), 302)
-    logging.critical('data is ', data)
+
+    soup = BeautifulSoup(html_text, 'html.parser')
+
+    if soup.find('h1'):
+        h1 = soup.h1.string
+    else:
+        h1 = ''
+    if soup.find('title'):
+        title = soup.title.string
+    else:
+        title = ''
+    if soup.find("meta", attrs={"name": "description"}):
+        description = soup.find(
+            "meta",
+            attrs={"name": "description"}
+        )['content']
+    else:
+        description = ''
+
+    logging.critical('tags: ', h1, title, description)
 
     conn = connect_to_db()
     with conn:
         with conn.cursor() as cur:
-            sql = 'INSERT INTO url_checks (url_id, status_code) VALUES (%s, %s);'
-            cur.execute(sql, (id, data,))
+            sql = ('INSERT INTO url_checks '
+                   '(url_id, h1, title, description, status_code) '
+                   'VALUES (%s, %s, %s, %s, %s);')
+            cur.execute(sql, (id, h1, title, description, status_code, ))
     conn.commit()
     conn.close()
     flash('Страница успешно проверена', 'success')

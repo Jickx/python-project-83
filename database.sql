@@ -16,8 +16,3 @@ CREATE TABLE url_checks (
     description varchar(255),
     created_at date NOT NULL DEFAULT CURRENT_DATE
 );
-
-
-INSERT INTO urls (name) VALUES ('http://yandex.ru/');
-INSERT INTO urls (name) VALUES ('http://google.com/');
-
