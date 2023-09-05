@@ -122,7 +122,7 @@ def post_url():
         return redirect(url_for('home_page')), 302
     if not validators.url(url_req):
         flash('Некорректный URL', 'danger')
-        return redirect(url_for('home_page')), 302
+        return render_template('/home.html', url=url_req), 422
     url_norm = url_normalize(url_req)
     url = get_url_by_name(url_norm)
 
