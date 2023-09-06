@@ -10,6 +10,7 @@ from flask import (
 from dotenv import load_dotenv
 from url_normalize import url_normalize
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 import psycopg2
 import os
 import validators
@@ -116,14 +117,15 @@ def urls_page():
 
 @app.post('/urls')
 def post_url():
-    url_req = request.form.get('url')
-    if not url_req:
+    url = urlparse(request.form.get('url')).netloc
+    url_norm = url_normalize(url)
+    logging.critical('url is ', url_norm)
+    if not url_norm:
         flash('URL обязателен', 'danger')
         return redirect(url_for('home_page')), 302
-    if not validators.url(url_req):
+    if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
-        return render_template('/home.html', url=url_req), 422
-    url_norm = url_normalize(url_req)
+        return render_template('/home.html', url=url_norm), 422
     url = get_url_by_name(url_norm)
 
     if url:
@@ -145,7 +147,7 @@ def get_url_details(id):
                            url=url,
                            urls=url_details,
                            messages=messages
-                           )
+                           ), 200
 
 
 @app.post('/urls/<id>/checks')
