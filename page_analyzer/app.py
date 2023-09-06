@@ -118,7 +118,7 @@ def urls_page():
 @app.post('/urls')
 def post_url():
     url = urlparse(request.form.get('url')).netloc
-    url_norm = url_normalize(url)
+    url_norm = url_normalize(url).rstrip('/')
     if not url_norm:
         flash('URL обязателен', 'danger')
         return redirect(url_for('home_page')), 302
