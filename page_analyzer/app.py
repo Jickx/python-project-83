@@ -119,7 +119,6 @@ def urls_page():
 def post_url():
     url = urlparse(request.form.get('url')).netloc
     url_norm = url_normalize(url)
-    logging.critical('url is ', url_norm)
     if not url_norm:
         flash('URL обязателен', 'danger')
         return redirect(url_for('home_page')), 302
@@ -178,8 +177,6 @@ def get_checks(id):
         )['content']
     else:
         description = ''
-
-    logging.critical('tags: ', h1, title, description)
 
     conn = connect_to_db()
     with conn:
