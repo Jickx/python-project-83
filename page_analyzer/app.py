@@ -8,9 +8,8 @@ from flask import (
     get_flashed_messages
 )
 from dotenv import load_dotenv
-from url_normalize import url_normalize
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import psycopg2
 import os
 import validators
@@ -117,14 +116,16 @@ def urls_page():
 
 @app.post('/urls')
 def post_url():
-    url = urlparse(request.form.get('url')).netloc
-    url_norm = url_normalize(url).rstrip('/')
-    if not url_norm:
+    url_req = request.form.get('url')
+    if not url_req:
         flash('URL обязателен', 'danger')
-        return redirect(url_for('home_page')), 302
+        return redirect(url_for('home_page'), 302)
+    url_parsed = urlparse(url_req)
+    url_norm = f'{url_parsed.scheme}://{url_parsed.netloc}'
+    logging.warning(url_norm)
     if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
-        return render_template('/home.html', url=url_norm), 422
+        return redirect(url_for('home_page'), 302)
     url = get_url_by_name(url_norm)
 
     if url:
