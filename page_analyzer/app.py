@@ -4,20 +4,16 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect,
-    get_flashed_messages
+    redirect
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 import psycopg2
 import os
 import validators
 import secrets
 import requests
-
-
-import logging
 
 app = Flask(__name__)
 load_dotenv()
@@ -126,9 +122,11 @@ def post_url():
 
     url = get_url_by_name(url_norm)
 
+    print(url)
+
     if url:
         flash('Страница уже существует', 'info')
-        return render_template('/home.html'), 422
+        return redirect(url_for('get_url_details', id=url[0]), 302)
 
     id = insert_data(url_norm)
     flash('Страница успешно добавлена', 'success')
