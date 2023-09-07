@@ -153,7 +153,7 @@ def get_checks(id):
         html_text = r.text
     except requests.exceptions.RequestException:
         flash('Произошла ошибка при проверке', 'danger')
-        return redirect(url_for('get_url_details', id=id), 302)
+        return render_template('/show.html', id=id, url=url), 422
 
     soup = BeautifulSoup(html_text, 'html.parser')
 
