@@ -103,9 +103,7 @@ def get_all_url_details(id):
 
 @app.route('/')
 def home_page():
-    messages = get_flashed_messages(with_categories=True)
-    urls = get_all_urls()
-    return render_template('/home.html', urls=urls, messages=messages)
+    return render_template('/home.html')
 
 
 @app.get('/urls')
@@ -119,18 +117,18 @@ def post_url():
     url_req = request.form.get('url')
     if not url_req:
         flash('URL обязателен', 'danger')
-        return redirect(url_for('home_page'), 302)
+        return render_template('/home.html'), 422
     url_parsed = urlparse(url_req)
     url_norm = f'{url_parsed.scheme}://{url_parsed.netloc}'
-    logging.warning(url_norm)
     if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
-        return redirect(url_for('home_page'), 302)
+        return render_template('/home.html'), 422
+
     url = get_url_by_name(url_norm)
 
     if url:
         flash('Страница уже существует', 'info')
-        return redirect(url_for('home_page'), 302)
+        return render_template('/home.html'), 422
 
     flash('Страница успешно добавлена', 'success')
     id = insert_data(url_norm)
