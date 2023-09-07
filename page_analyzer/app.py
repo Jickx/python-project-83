@@ -15,8 +15,8 @@ import validators
 import secrets
 import requests
 
-app = Flask(__name__)
 load_dotenv()
+app = Flask(__name__)
 
 secret_key = secrets.token_hex(16)
 app.config['SECRET_KEY'] = secret_key
