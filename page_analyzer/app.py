@@ -4,7 +4,8 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect
+    redirect,
+    get_flashed_messages
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
@@ -99,13 +100,15 @@ def get_all_url_details(id):
 
 @app.route('/')
 def home_page():
-    return render_template('/home.html')
+    messages = get_flashed_messages(with_categories=True)
+    return render_template('home.html', messages=messages)
 
 
 @app.get('/urls')
 def urls_page():
     urls = get_all_urls()
-    return render_template('/urls.html', urls=urls)
+    messages = get_flashed_messages(with_categories=True)
+    return render_template('urls.html', urls=urls, messages=messages)
 
 
 @app.post('/urls')
@@ -113,16 +116,14 @@ def post_url():
     url_req = request.form.get('url')
     if not url_req:
         flash('URL обязателен', 'danger')
-        return render_template('/home.html'), 422
+        return redirect(url_for('home_page')), 302
     url_parsed = urlparse(url_req)
     url_norm = f'{url_parsed.scheme}://{url_parsed.netloc}'
     if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
-        return render_template('/home.html'), 422
+        return redirect(url_for('home_page')), 302
 
     url = get_url_by_name(url_norm)
-
-    print(url)
 
     if url:
         flash('Страница уже существует', 'info')
@@ -137,10 +138,12 @@ def post_url():
 def get_url_details(id):
     url = get_url_by_id(id)
     url_details = get_all_url_details(id)
-    return render_template('/show.html',
+    messages = get_flashed_messages(with_categories=True)
+    return render_template('show.html',
                            id=id,
                            url=url,
                            urls=url_details,
+                           messages=messages
                            ), 200
 
 
@@ -153,7 +156,7 @@ def get_checks(id):
         html_text = r.text
     except requests.exceptions.RequestException:
         flash('Произошла ошибка при проверке', 'danger')
-        return render_template('/show.html', id=id, url=url), 422
+        return render_template('show.html', id=id, url=url), 422
 
     soup = BeautifulSoup(html_text, 'html.parser')
 
