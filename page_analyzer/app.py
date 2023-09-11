@@ -100,15 +100,13 @@ def get_all_url_details(id):
 
 @app.route('/')
 def home_page():
-    messages = get_flashed_messages(with_categories=True)
-    return render_template('home.html', messages=messages)
+    return render_template('home.html')
 
 
 @app.get('/urls')
 def urls_page():
     urls = get_all_urls()
-    messages = get_flashed_messages(with_categories=True)
-    return render_template('urls.html', urls=urls, messages=messages)
+    return render_template('urls.html', urls=urls)
 
 
 @app.post('/urls')
@@ -138,12 +136,10 @@ def post_url():
 def get_url_details(id):
     url = get_url_by_id(id)
     url_details = get_all_url_details(id)
-    messages = get_flashed_messages(with_categories=True)
     return render_template('show.html',
                            id=id,
                            url=url,
-                           urls=url_details,
-                           messages=messages
+                           urls=url_details
                            ), 200
 
 
