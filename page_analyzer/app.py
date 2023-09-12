@@ -114,12 +114,12 @@ def post_url():
     url_req = request.form.get('url')
     if not url_req:
         flash('URL обязателен', 'danger')
-        return redirect(url_for('home_page'), 302)
+        return render_template('/home.html', url=url_req), 422
     url_parsed = urlparse(url_req)
     url_norm = f'{url_parsed.scheme}://{url_parsed.netloc}'
     if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
-        return redirect(url_for('home_page'), 302)
+        return render_template('/home.html', url=url_req), 422
 
     url = get_url_by_name(url_norm)
 
