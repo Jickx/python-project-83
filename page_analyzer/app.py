@@ -4,8 +4,7 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect,
-    get_flashed_messages
+    redirect
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
@@ -51,9 +50,13 @@ def get_url_by_name(name):
     with conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM urls WHERE name LIKE %s", (name,))
+            column_names = [desc[0] for desc in cur.description]
             result = cur.fetchone()
     conn.close()
-    return result
+    if result:
+        return dict(zip(column_names, result))
+    else:
+        return None
 
 
 def get_url_by_id(id):
@@ -117,6 +120,7 @@ def post_url():
         return render_template('/home.html', url=url_req), 422
     url_parsed = urlparse(url_req)
     url_norm = f'{url_parsed.scheme}://{url_parsed.netloc}'
+
     if not validators.url(url_norm):
         flash('Некорректный URL', 'danger')
         return render_template('/home.html', url=url_req), 422
@@ -125,7 +129,7 @@ def post_url():
 
     if url:
         flash('Страница уже существует', 'info')
-        return render_template('/show.html', id=url[0]), 422
+        return render_template('/show.html', url=url), 422
 
     id = insert_data(url_norm)
     flash('Страница успешно добавлена', 'success')
