@@ -140,7 +140,9 @@ def post_url():
 def get_url_details(id):
     url = get_url_by_id(id)
     url_details = get_all_url_details(id)
+    messages = get_flashed_messages(with_categories=True)
     return render_template('show.html',
+                           messages=messages,
                            id=id,
                            url=url,
                            urls=url_details
