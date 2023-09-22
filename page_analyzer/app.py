@@ -4,7 +4,7 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect
+    redirect, get_flashed_messages
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
@@ -27,29 +27,34 @@ def connect_to_db():
     conn = psycopg2.connect(app.config['DATABASE_URL'])
     return conn
 
-conn = connect_to_db()
+# conn = connect_to_db()
 
 
 def get_all_urls():
-    with conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
-                    "urls.name, "
-                    "url_checks.status_code, "
-                    "url_checks.created_at "
-                    "FROM urls "
-                    "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
-                    "ORDER BY urls.id ASC")
-        column_names = [desc[0] for desc in cur.description]
-        result = cur.fetchall()
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
+                        "urls.name, "
+                        "url_checks.status_code, "
+                        "url_checks.created_at "
+                        "FROM urls "
+                        "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
+                        "ORDER BY urls.id ASC")
+            column_names = [desc[0] for desc in cur.description]
+            result = cur.fetchall()
+        conn.commit()
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
 def get_url_by_name(name):
-
-    with conn.cursor() as cur:
-        cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
-        column_names = [desc[0] for desc in cur.description]
-        result = cur.fetchone()
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
+            column_names = [desc[0] for desc in cur.description]
+            result = cur.fetchone()
+        conn.commit()
     if result:
         return dict(zip(column_names, result))
     else:
@@ -57,35 +62,44 @@ def get_url_by_name(name):
 
 
 def get_url_by_id(id):
-    with conn.cursor() as cur:
-        cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
-        column_names = [desc[0] for desc in cur.description]
-        result = cur.fetchone()
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
+            column_names = [desc[0] for desc in cur.description]
+            result = cur.fetchone()
+        conn.commit()
     return dict(zip(column_names, result))
 
 
 def insert_data(name):
-    with conn.cursor() as cur:
-        sql = "INSERT INTO urls (name) VALUES (%s);"
-        cur.execute(sql, (name,))
-    conn.commit()
-    with conn.cursor() as cur:
-        cur.execute("SELECT id FROM urls "
-                    "WHERE name = %s",
-                    (name,))
-        id = cur.fetchone()[0]
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            sql = "INSERT INTO urls (name) VALUES (%s);"
+            cur.execute(sql, (name,))
+        conn.commit()
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM urls "
+                        "WHERE name = %s",
+                        (name,))
+            id = cur.fetchone()[0]
+        conn.commit()
     return id
 
 
 def get_all_url_details(id):
-    with conn.cursor() as cur:
-        cur.execute('SELECT * FROM url_checks '
-                    'WHERE url_id = %s '
-                    'ORDER BY id DESC',
-                    (id,)
-                    )
-        column_names = [desc[0] for desc in cur.description]
-        result = cur.fetchall()
+    conn = connect_to_db()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT * FROM url_checks '
+                        'WHERE url_id = %s '
+                        'ORDER BY id DESC',
+                        (id,)
+                        )
+            column_names = [desc[0] for desc in cur.description]
+            result = cur.fetchall()
+        conn.commit()
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
@@ -174,7 +188,6 @@ def get_checks(id):
                    '(url_id, h1, title, description, status_code) '
                    'VALUES (%s, %s, %s, %s, %s);')
             cur.execute(sql, (id, h1, title, description, status_code, ))
-    conn.commit()
-    conn.close()
+        conn.commit()
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
