@@ -154,6 +154,7 @@ def get_checks(id):
         r = requests.get(url['name'])
         status_code = r.status_code
         html_text = r.text
+        r.raise_for_status()
     except requests.exceptions.RequestException:
         flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('get_url_details', id=id), 302)
