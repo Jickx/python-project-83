@@ -27,32 +27,29 @@ def connect_to_db():
     conn = psycopg2.connect(app.config['DATABASE_URL'])
     return conn
 
+conn = connect_to_db()
+
 
 def get_all_urls():
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
-                        "urls.name, "
-                        "url_checks.status_code, "
-                        "url_checks.created_at "
-                        "FROM urls "
-                        "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
-                        "ORDER BY urls.id ASC")
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchall()
-    conn.close()
+    with conn.cursor() as cur:
+        cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
+                    "urls.name, "
+                    "url_checks.status_code, "
+                    "url_checks.created_at "
+                    "FROM urls "
+                    "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
+                    "ORDER BY urls.id ASC")
+        column_names = [desc[0] for desc in cur.description]
+        result = cur.fetchall()
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
 def get_url_by_name(name):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchone()
-    conn.close()
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
+        column_names = [desc[0] for desc in cur.description]
+        result = cur.fetchone()
     if result:
         return dict(zip(column_names, result))
     else:
@@ -60,44 +57,35 @@ def get_url_by_name(name):
 
 
 def get_url_by_id(id):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchone()
-    conn.close()
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
+        column_names = [desc[0] for desc in cur.description]
+        result = cur.fetchone()
     return dict(zip(column_names, result))
 
 
 def insert_data(name):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            sql = "INSERT INTO urls (name) VALUES (%s);"
-            cur.execute(sql, (name,))
-        conn.commit()
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM urls "
-                        "WHERE name = %s",
-                        (name,))
-            id = cur.fetchone()[0]
-    conn.close()
+    with conn.cursor() as cur:
+        sql = "INSERT INTO urls (name) VALUES (%s);"
+        cur.execute(sql, (name,))
+    conn.commit()
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM urls "
+                    "WHERE name = %s",
+                    (name,))
+        id = cur.fetchone()[0]
     return id
 
 
 def get_all_url_details(id):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute('SELECT * FROM url_checks '
-                        'WHERE url_id = %s '
-                        'ORDER BY id DESC',
-                        (id,)
-                        )
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchall()
-    conn.close()
+    with conn.cursor() as cur:
+        cur.execute('SELECT * FROM url_checks '
+                    'WHERE url_id = %s '
+                    'ORDER BY id DESC',
+                    (id,)
+                    )
+        column_names = [desc[0] for desc in cur.description]
+        result = cur.fetchall()
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
