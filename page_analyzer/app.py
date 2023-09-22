@@ -133,7 +133,7 @@ def post_url():
 
     id = insert_data(url_norm)
     flash('Страница успешно добавлена', 'success')
-    return redirect(url_for('get_url_details', id=id), 301)
+    return redirect(url_for('get_url_details', id=id), 302)
 
 
 @app.route('/urls/<int:id>')
