@@ -4,7 +4,7 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect
+    redirect, get_flashed_messages
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
