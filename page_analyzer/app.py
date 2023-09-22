@@ -19,7 +19,8 @@ load_dotenv()
 app = Flask(__name__)
 
 secret_key = secrets.token_hex(16)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = secret_key
+# app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
 
