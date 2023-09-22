@@ -127,9 +127,8 @@ def post_url():
     url = get_url_by_name(url_norm)
 
     if url:
-        urls = get_all_url_details(url['id'])
         flash('Страница уже существует', 'info')
-        return render_template('/show.html', url=url, urls=urls), 422
+        return redirect(url_for('get_url_details', id=url['id']), 302)
 
     id = insert_data(url_norm)
     flash('Страница успешно добавлена', 'success')
