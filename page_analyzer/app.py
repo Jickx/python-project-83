@@ -12,24 +12,19 @@ from urllib.parse import urlparse
 import psycopg2
 import os
 import validators
-import secrets
 import requests
 
 load_dotenv()
 app = Flask(__name__)
 
-secret_key = secrets.token_hex(16)
-app.config['SECRET_KEY'] = secret_key
-# app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
-
 
 
 def connect_to_db():
     conn = psycopg2.connect(app.config['DATABASE_URL'])
     return conn
 
-# conn = connect_to_db()
 
 
 def get_all_urls():
@@ -132,8 +127,9 @@ def post_url():
     url = get_url_by_name(url_norm)
 
     if url:
+        urls = get_all_url_details(url['id'])
         flash('Страница уже существует', 'info')
-        return render_template('/show.html', url=url), 422
+        return render_template('/show.html', url=url, urls=urls), 422
 
     id = insert_data(url_norm)
     flash('Страница успешно добавлена', 'success')
