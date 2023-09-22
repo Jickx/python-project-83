@@ -49,7 +49,7 @@ def get_url_by_name(name):
     conn = connect_to_db()
     with conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls WHERE name LIKE %s", (name,))
+            cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
             column_names = [desc[0] for desc in cur.description]
             result = cur.fetchone()
     conn.close()
@@ -79,7 +79,7 @@ def insert_data(name):
         conn.commit()
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM urls "
-                        "WHERE name LIKE %s",
+                        "WHERE name = %s",
                         (name,))
             id = cur.fetchone()[0]
     conn.close()
