@@ -26,7 +26,6 @@ def connect_to_db():
     return conn
 
 
-
 def get_all_urls():
     conn = connect_to_db()
     with conn:
