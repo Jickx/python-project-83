@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block title %}Page Not Found{% endblock %}
+{% block content %}
+<main class="flex-grow-1">
+    <div class="container-lg mt-3">
+        <h1 class="display-3">500 Ошибка сервера</h1>
+        <p>Сервер не может корректно обработать запрос.<a href="{{ url_for('home_page') }}"> Вернуться на главную.</a>
+        </p>
+    </div>
+</main>
+
+{% endblock %}

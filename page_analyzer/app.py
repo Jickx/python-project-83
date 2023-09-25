@@ -4,7 +4,9 @@ from flask import (
     request,
     flash,
     url_for,
-    redirect, get_flashed_messages
+    redirect,
+    get_flashed_messages,
+    abort
 )
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
@@ -62,8 +64,10 @@ def get_url_by_id(id):
     with conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
-            column_names = [desc[0] for desc in cur.description]
             result = cur.fetchone()
+            if not result:
+                return None
+            column_names = [desc[0] for desc in cur.description]
         conn.commit()
     return dict(zip(column_names, result))
 
@@ -97,6 +101,16 @@ def get_all_url_details(id):
             result = cur.fetchall()
         conn.commit()
     return map(lambda x: dict(zip(column_names, x)), result)
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('errors/404.html'), 404
+
+
+@app.errorhandler(500)
+def server_error(error):
+    return render_template('errors/500.html'), 500
 
 
 @app.route('/')
@@ -137,6 +151,8 @@ def post_url():
 @app.route('/urls/<int:id>')
 def get_url_details(id):
     url = get_url_by_id(id)
+    if not url:
+        abort(404)
     url_details = get_all_url_details(id)
     messages = get_flashed_messages(with_categories=True)
     return render_template('show.html',

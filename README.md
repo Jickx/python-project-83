@@ -1,4 +1,4 @@
-# Page analizer
+# Page analyzer
 ***
 [Hexlet](https://ru.hexlet.io/) study project. Page analyzer web application for SEO optimization. 
 ### [Link to live app](https://page-analyzer-ku65.onrender.com/)
@@ -32,27 +32,24 @@
 
 ### Makefile
 
- Install poetry project: ```make install```
+Install poetry project: ```make install```
 
 Install poetry project and start postgresql server: ```make build```
 
- Run flask app: ```make dev```
+Run flask app: ```make dev```
 
- Start gunicorn server: ```make dev```
-
- Run linter: ```make lint```
+Start gunicorn server: ```make dev```
 
 ### Installation
 * [Install PostgreSQL](https://www.postgresql.org/download/)
-*  Start PostgreSQL server.
-```brew services start postgresql@15```
+*  Start PostgreSQL server: ```brew services start postgresql@15```
 * [Install Poetry.](https://python-poetry.org/docs/)
-* Install project and start postgresql server ```make build```
+* Install project and start postgresql server: ```make build```
 
 
 ### Run
-* Start development server ```make dev```
-* Go to ```http://127.0.0.1:5000```
+* Start gunicorn server: ```make start```
+* Go to: ```http://127.0.0.1:5000```
 
 ## How to use
 ***
@@ -61,6 +58,3 @@ Install poetry project and start postgresql server: ```make build```
 3. Run analyzer tests.
 4. Result with response code, H1 tag, title, description and date of creation will appear if test was successful.
 5. it is possible to run tests multiple times.
-
-
-
