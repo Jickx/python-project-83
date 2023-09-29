@@ -9,12 +9,11 @@ from flask import (
     abort
 )
 from dotenv import load_dotenv
-from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+from .parse import parse_website
 import psycopg2
 import os
 import validators
-import requests
 
 load_dotenv()
 app = Flask(__name__)
@@ -166,32 +165,13 @@ def get_url_details(id):
 @app.post('/urls/<id>/checks')
 def get_checks(id):
     url = get_url_by_id(id)
-    try:
-        r = requests.get(url['name'])
-        status_code = r.status_code
-        html_text = r.text
-        r.raise_for_status()
-    except requests.exceptions.RequestException:
+    parsed_content = parse_website(url)
+
+    if not parsed_content:
         flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('get_url_details', id=id), 302)
 
-    soup = BeautifulSoup(html_text, 'html.parser')
-
-    if soup.find('h1'):
-        h1 = soup.h1.string
-    else:
-        h1 = ''
-    if soup.find('title'):
-        title = soup.title.string
-    else:
-        title = ''
-    if soup.find("meta", attrs={"name": "description"}):
-        description = soup.find(
-            "meta",
-            attrs={"name": "description"}
-        )['content']
-    else:
-        description = ''
+    status_code, h1, title, description = parsed_content.values()
 
     conn = connect_to_db()
     with conn:
@@ -199,7 +179,7 @@ def get_checks(id):
             sql = ('INSERT INTO url_checks '
                    '(url_id, h1, title, description, status_code) '
                    'VALUES (%s, %s, %s, %s, %s);')
-            cur.execute(sql, (id, h1, title, description, status_code, ))
+            cur.execute(sql, (id, h1, title, description, status_code))
         conn.commit()
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
