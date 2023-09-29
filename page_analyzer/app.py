@@ -1,5 +1,5 @@
+from .app_init import app
 from flask import (
-    Flask,
     render_template,
     request,
     flash,
@@ -8,124 +8,17 @@ from flask import (
     get_flashed_messages,
     abort
 )
-from dotenv import load_dotenv
+from .service import (
+    get_all_urls,
+    get_all_url_details,
+    get_url_by_name,
+    insert_into_urls,
+    insert_into_urls_checks,
+    get_url_by_id
+)
 from urllib.parse import urlparse
 from .parse import parse_website
-import psycopg2
-import os
 import validators
-
-load_dotenv()
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
-
-
-class Database:
-    def __init__(self):
-        self.conn = psycopg2.connect(app.config['DATABASE_URL'])
-        self.cur = self.conn.cursor()
-        self.description = None
-
-    def query(self, query, *args):
-        self.cur.execute(query, *args)
-        self.description = self.cur.description
-
-    def fetchall(self):
-        return self.cur.fetchall()
-
-    def fetchone(self):
-        return self.cur.fetchone()
-
-    def close(self):
-        self.cur.close()
-        self.conn.commit()
-        self.conn.close()
-
-
-def get_all_urls():
-    db = Database()
-    db.query("SELECT DISTINCT ON (urls.id) urls.id, "
-             "urls.name, "
-             "url_checks.status_code, "
-             "url_checks.created_at "
-             "FROM urls "
-             "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
-             "ORDER BY urls.id ASC")
-    column_names = [desc[0] for desc in db.description]
-    result = db.fetchall()
-    db.close()
-
-    return map(lambda x: dict(zip(column_names, x)), result)
-
-
-def get_url_by_name(name):
-    db = Database()
-    db.query("SELECT * FROM urls WHERE name = %s", (name,))
-    column_names = [desc[0] for desc in db.description]
-    result = db.fetchone()
-    db.close()
-    if result:
-        return dict(zip(column_names, result))
-    else:
-        return None
-
-
-def get_url_by_id(id):
-    db = Database()
-    db.query("SELECT * FROM urls WHERE id = %s", (id,))
-    result = db.fetchone()
-    if not result:
-        return None
-    column_names = [desc[0] for desc in db.description]
-    db.close()
-    return dict(zip(column_names, result))
-
-
-def insert_into_urls(name):
-    db = Database()
-    sql = "INSERT INTO urls (name) VALUES (%s);"
-    db.query(sql, (name,))
-    db.query("SELECT id FROM urls "
-             "WHERE name = %s",
-             (name,))
-    id = db.fetchone()[0]
-    db.close()
-    return id
-
-
-def insert_into_urls_checks(id, parsed_content):
-    status_code, h1, title, description = parsed_content.values()
-    db = Database()
-    sql = ('INSERT INTO url_checks '
-           '(url_id, h1, title, description, status_code) '
-           'VALUES (%s, %s, %s, %s, %s);')
-    db.query(sql, (id, h1, title, description, status_code))
-    db.close()
-
-
-def get_all_url_details(id):
-    db = Database()
-    db.query('SELECT * FROM url_checks '
-             'WHERE url_id = %s '
-             'ORDER BY id DESC',
-             (id,)
-             )
-    column_names = [desc[0] for desc in db.description]
-    result = db.fetchall()
-    db.close()
-    return map(lambda x: dict(zip(column_names, x)), result)
-
-
-@app.errorhandler(404)
-def page_not_found(error):
-    return render_template('errors/404.html'), 404
-
-
-@app.errorhandler(500)
-def server_error(error):
-    return render_template('errors/500.html'), 500
 
 
 @app.route('/')
@@ -191,3 +84,13 @@ def get_checks(id):
 
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('errors/404.html'), 404
+
+
+@app.errorhandler(500)
+def server_error(error):
+    return render_template('errors/500.html'), 500
