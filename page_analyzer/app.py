@@ -22,36 +22,50 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['DATABASE_URL'] = os.getenv('DATABASE_URL')
 
 
-def connect_to_db():
-    conn = psycopg2.connect(app.config['DATABASE_URL'])
-    return conn
+class Database:
+    def __init__(self):
+        self.conn = psycopg2.connect(app.config['DATABASE_URL'])
+        self.cur = self.conn.cursor()
+        self.description = None
+
+    def query(self, query, *args):
+        self.cur.execute(query, *args)
+        self.description = self.cur.description
+
+    def fetchall(self):
+        return self.cur.fetchall()
+
+    def fetchone(self):
+        return self.cur.fetchone()
+
+    def close(self):
+        self.cur.close()
+        self.conn.commit()
+        self.conn.close()
 
 
 def get_all_urls():
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT DISTINCT ON (urls.id) urls.id, "
-                        "urls.name, "
-                        "url_checks.status_code, "
-                        "url_checks.created_at "
-                        "FROM urls "
-                        "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
-                        "ORDER BY urls.id ASC")
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchall()
-        conn.commit()
+    db = Database()
+    db.query("SELECT DISTINCT ON (urls.id) urls.id, "
+             "urls.name, "
+             "url_checks.status_code, "
+             "url_checks.created_at "
+             "FROM urls "
+             "LEFT JOIN url_checks ON urls.id = url_checks.url_id "
+             "ORDER BY urls.id ASC")
+    column_names = [desc[0] for desc in db.description]
+    result = db.fetchall()
+    db.close()
+
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
 def get_url_by_name(name):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls WHERE name = %s", (name,))
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchone()
-        conn.commit()
+    db = Database()
+    db.query("SELECT * FROM urls WHERE name = %s", (name,))
+    column_names = [desc[0] for desc in db.description]
+    result = db.fetchone()
+    db.close()
     if result:
         return dict(zip(column_names, result))
     else:
@@ -59,46 +73,48 @@ def get_url_by_name(name):
 
 
 def get_url_by_id(id):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM urls WHERE id = %s", (id,))
-            result = cur.fetchone()
-            if not result:
-                return None
-            column_names = [desc[0] for desc in cur.description]
-        conn.commit()
+    db = Database()
+    db.query("SELECT * FROM urls WHERE id = %s", (id,))
+    result = db.fetchone()
+    if not result:
+        return None
+    column_names = [desc[0] for desc in db.description]
+    db.close()
     return dict(zip(column_names, result))
 
 
-def insert_data(name):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            sql = "INSERT INTO urls (name) VALUES (%s);"
-            cur.execute(sql, (name,))
-        conn.commit()
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM urls "
-                        "WHERE name = %s",
-                        (name,))
-            id = cur.fetchone()[0]
-        conn.commit()
+def insert_into_urls(name):
+    db = Database()
+    sql = "INSERT INTO urls (name) VALUES (%s);"
+    db.query(sql, (name,))
+    db.query("SELECT id FROM urls "
+             "WHERE name = %s",
+             (name,))
+    id = db.fetchone()[0]
+    db.close()
     return id
 
 
+def insert_into_urls_checks(id, parsed_content):
+    status_code, h1, title, description = parsed_content.values()
+    db = Database()
+    sql = ('INSERT INTO url_checks '
+           '(url_id, h1, title, description, status_code) '
+           'VALUES (%s, %s, %s, %s, %s);')
+    db.query(sql, (id, h1, title, description, status_code))
+    db.close()
+
+
 def get_all_url_details(id):
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute('SELECT * FROM url_checks '
-                        'WHERE url_id = %s '
-                        'ORDER BY id DESC',
-                        (id,)
-                        )
-            column_names = [desc[0] for desc in cur.description]
-            result = cur.fetchall()
-        conn.commit()
+    db = Database()
+    db.query('SELECT * FROM url_checks '
+             'WHERE url_id = %s '
+             'ORDER BY id DESC',
+             (id,)
+             )
+    column_names = [desc[0] for desc in db.description]
+    result = db.fetchall()
+    db.close()
     return map(lambda x: dict(zip(column_names, x)), result)
 
 
@@ -142,7 +158,7 @@ def post_url():
         flash('Страница уже существует', 'info')
         return redirect(url_for('get_url_details', id=url['id']), 302)
 
-    id = insert_data(url_norm)
+    id = insert_into_urls(url_norm)
     flash('Страница успешно добавлена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
 
@@ -171,15 +187,7 @@ def get_checks(id):
         flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('get_url_details', id=id), 302)
 
-    status_code, h1, title, description = parsed_content.values()
+    insert_into_urls_checks(id, parsed_content)
 
-    conn = connect_to_db()
-    with conn:
-        with conn.cursor() as cur:
-            sql = ('INSERT INTO url_checks '
-                   '(url_id, h1, title, description, status_code) '
-                   'VALUES (%s, %s, %s, %s, %s);')
-            cur.execute(sql, (id, h1, title, description, status_code))
-        conn.commit()
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('get_url_details', id=id), 302)
