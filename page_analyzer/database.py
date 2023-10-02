@@ -1,5 +1,5 @@
 import psycopg2
-from .app_init import app
+from page_analyzer.app import app
 
 
 class Database:

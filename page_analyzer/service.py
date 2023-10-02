@@ -1,4 +1,4 @@
-from .database import Database
+from page_analyzer.database import Database
 
 
 def get_all_urls():

@@ -1,3 +1,3 @@
-from page_analyzer.app import app
+from page_analyzer.main import app
 
 __all__ = (app,)
