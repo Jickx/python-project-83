@@ -35,7 +35,7 @@ Install poetry project and start postgresql server: ```make build```
 
 Run flask app: ```make dev```
 
-Start gunicorn server: ```make dev```
+Start gunicorn server: ```make start```
 
 ### Installation:
 * [Install PostgreSQL](https://www.postgresql.org/download/)
