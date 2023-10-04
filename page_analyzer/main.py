@@ -10,8 +10,8 @@ from flask import (
 )
 from page_analyzer.service import (
     get_all_urls,
-    get_all_url_details,
-    get_url_by_name,
+    get_url_details,
+    check_if_url_exists,
     insert_into_urls,
     insert_into_urls_checks,
     get_url_by_id
@@ -27,13 +27,13 @@ def home_page():
 
 
 @app.get('/urls')
-def urls_page():
+def get_urls():
     urls = get_all_urls()
     return render_template('urls.html', urls=urls)
 
 
 @app.post('/urls')
-def post_url():
+def post_urls():
     url_req = request.form.get('url')
     if not url_req:
         flash('URL обязателен', 'danger')
@@ -45,45 +45,46 @@ def post_url():
         flash('Некорректный URL', 'danger')
         return render_template('/home.html', url=url_req), 422
 
-    url = get_url_by_name(url_norm)
+    url = check_if_url_exists(url_norm)
 
     if url:
         flash('Страница уже существует', 'info')
         return redirect(url_for('get_url_details', id=url['id']), 302)
 
-    id = insert_into_urls(url_norm)
+    url = insert_into_urls(url_norm)
+    url_id = url['id']
     flash('Страница успешно добавлена', 'success')
-    return redirect(url_for('get_url_details', id=id), 302)
+    return redirect(url_for('get_url_details', id=url_id), 302)
 
 
-@app.route('/urls/<int:id>')
-def get_url_details(id):
-    url = get_url_by_id(id)
+@app.route('/urls/<int:url_id>')
+def url_info(url_id):
+    url = get_url_by_id(url_id)
     if not url:
         abort(404)
-    url_details = get_all_url_details(id)
+    url_details = get_url_details(url_id)
     messages = get_flashed_messages(with_categories=True)
     return render_template('show.html',
                            messages=messages,
-                           id=id,
+                           id=url_id,
                            url=url,
                            urls=url_details
                            ), 200
 
 
-@app.post('/urls/<id>/checks')
-def get_checks(id):
-    url = get_url_by_id(id)
+@app.post('/urls/<int:url_id>/checks')
+def get_checks(url_id):
+    url = get_url_by_id(url_id)
     parsed_content = parse_website(url)
 
     if not parsed_content:
         flash('Произошла ошибка при проверке', 'danger')
-        return redirect(url_for('get_url_details', id=id), 302)
+        return redirect(url_for('url_info', url_id=url_id), 302)
 
-    insert_into_urls_checks(id, parsed_content)
+    insert_into_urls_checks(url_id, parsed_content)
 
     flash('Страница успешно проверена', 'success')
-    return redirect(url_for('get_url_details', id=id), 302)
+    return redirect(url_for('url_info', url_id=url_id), 302)
 
 
 @app.errorhandler(404)

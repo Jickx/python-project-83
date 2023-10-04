@@ -1,24 +1,37 @@
-import psycopg2
+from contextlib import contextmanager
+import psycopg2.pool
 from page_analyzer.app import app
 
 
 class Database:
     def __init__(self):
-        self.conn = psycopg2.connect(app.config['DATABASE_URL'])
-        self.cur = self.conn.cursor()
-        self.description = None
+        self.pool = psycopg2.pool.SimpleConnectionPool(
+            1,
+            20,
+            app.config['DATABASE_URL']
+        )
 
-    def query(self, query, *args):
-        self.cur.execute(query, *args)
-        self.description = self.cur.description
+    @contextmanager
+    def get_cursor(self):
+        conn = self.pool.getconn()
+        try:
+            yield conn.cursor()
+            conn.commit()
+        finally:
+            self.pool.putconn(conn)
 
-    def fetchall(self):
-        return self.cur.fetchall()
+    def fetchall(self, query, *args):
+        with self.get_cursor() as cursor:
+            if args:
+                cursor.execute(query, (args,))
+            else:
+                cursor.execute(query)
+            result = cursor.fetchall()
+        return result
 
-    def fetchone(self):
-        return self.cur.fetchone()
-
-    def close(self):
-        self.cur.close()
-        self.conn.commit()
-        self.conn.close()
+    def fetchone(self, query, *args):
+        print(args)
+        with self.get_cursor() as cursor:
+            cursor.execute(query, tuple(args))
+            result = cursor.fetchone()
+        return result
