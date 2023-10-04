@@ -49,12 +49,12 @@ def post_urls():
 
     if url:
         flash('Страница уже существует', 'info')
-        return redirect(url_for('get_url_details', id=url['id']), 302)
+        return redirect(url_for('url_info', url_id=url['id']), 302)
 
     url = insert_into_urls(url_norm)
     url_id = url['id']
     flash('Страница успешно добавлена', 'success')
-    return redirect(url_for('get_url_details', id=url_id), 302)
+    return redirect(url_for('url_info', url_id=url_id), 302)
 
 
 @app.route('/urls/<int:url_id>')
@@ -66,7 +66,7 @@ def url_info(url_id):
     messages = get_flashed_messages(with_categories=True)
     return render_template('show.html',
                            messages=messages,
-                           id=url_id,
+                           url_id=url_id,
                            url=url,
                            urls=url_details
                            ), 200
