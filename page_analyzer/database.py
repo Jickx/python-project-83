@@ -30,7 +30,6 @@ class Database:
         return result
 
     def fetchone(self, query, *args):
-        print(args)
         with self.get_cursor() as cursor:
             cursor.execute(query, tuple(args))
             result = cursor.fetchone()
