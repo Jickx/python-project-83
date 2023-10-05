@@ -17,7 +17,7 @@ from page_analyzer.service import (
     get_url_by_id
 )
 from urllib.parse import urlparse
-from page_analyzer.parse import parse_website
+from page_analyzer.service import parse_website
 import validators
 
 
@@ -74,14 +74,14 @@ def url_info(url_id):
 
 @app.post('/urls/<int:url_id>/checks')
 def get_checks(url_id):
-    url = get_url_by_id(url_id)
-    parsed_content = parse_website(url)
+    url_name = get_url_by_id(url_id)['name']
+    parsed_content = parse_website(url_name)
 
     if not parsed_content:
         flash('Произошла ошибка при проверке', 'danger')
         return redirect(url_for('url_info', url_id=url_id), 302)
 
-    insert_into_urls_checks(url_id, parsed_content)
+    insert_into_urls_checks(url_id, parsed_content.__dict__)
 
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('url_info', url_id=url_id), 302)

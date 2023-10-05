@@ -1,5 +1,7 @@
 from page_analyzer.database import Database
 from dataclasses import dataclass
+from bs4 import BeautifulSoup
+import requests
 import datetime
 
 db = Database()
@@ -40,6 +42,14 @@ class UrlsChecksDTO:
     @staticmethod
     def from_list(urls_list):
         return UrlsChecksDTO([UrlCheckDTO(*item) for item in urls_list])
+
+
+@dataclass
+class ParseDTO:
+    status_code: int
+    h1: str
+    title: str
+    description: str
 
 
 def get_all_urls():
@@ -96,3 +106,28 @@ def insert_into_urls_checks(url_id, parsed_content):
                 "RETURNING *;",
                 url_id, h1, title, description, status_code
                 )
+
+
+def parse_website(url_name):
+    try:
+        r = requests.get(url_name)
+        r.raise_for_status()
+    except requests.exceptions.RequestException:
+        return None
+
+    status_code = r.status_code
+    html_text = r.text
+
+    soup = BeautifulSoup(html_text, 'html.parser')
+
+    h1 = soup.h1.string if soup.find('h1') else ''
+    title = soup.title.string if soup.find('title') else ''
+    description = (
+        soup.find('meta', attrs={'name': 'description'})['content']
+        if (soup.find("meta", attrs={'name': 'description'}))
+        else ''
+    )
+    parsed_data = [status_code, h1, title, description]
+    result = ParseDTO(*parsed_data)
+
+    return result
